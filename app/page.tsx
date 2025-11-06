@@ -19,7 +19,7 @@ export default function Home() {
       <main className="w-full max-w-md mx-auto px-6 py-12">
         <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold text-center mb-8 text-black dark:text-zinc-50">
-            Payment Form
+            Stripe Payment Form
           </h1>
           
           <div className="space-y-6">
