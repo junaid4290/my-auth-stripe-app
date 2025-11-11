@@ -1,19 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import CustomPaymentForm from "@/components/CustomPaymentForm";
 
 export default function Home() {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [orderNote, setOrderNote] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
-  const handleCheckout = async () => {
+  const handleContinueToPayment = async () => {
     setError(null);
 
     if (!name || !amount) {
-      setError("Please fill in all fields");
+      setError("Please fill in all required fields");
       return;
     }
 
@@ -26,7 +32,7 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/create-checkout", {
+      const response = await fetch("/api/create-payment-intent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -35,22 +41,32 @@ export default function Home() {
           name,
           amount,
           customerEmail: customerEmail || undefined,
+          orderNote: orderNote || undefined,
+          phoneNumber: phoneNumber || undefined,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create checkout session");
+        throw new Error(data.error || "Failed to create payment intent");
       }
 
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      setClientSecret(data.clientSecret);
+      setPaymentIntentId(data.paymentIntentId);
+      setShowPaymentForm(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleBack = () => {
+    setShowPaymentForm(false);
+    setClientSecret(null);
+    setPaymentIntentId(null);
+    setError(null);
   };
 
   return (
@@ -67,74 +83,126 @@ export default function Home() {
             </div>
           )}
 
-          <div className="space-y-6">
-            <div>
-              <label 
-                htmlFor="name" 
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+          {!showPaymentForm ? (
+            <div className="space-y-6">
+              <div>
+                <label 
+                  htmlFor="name" 
+                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+                >
+                  Name *
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-zinc-50 text-black"
+                  required
+                />
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="email" 
+                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+                >
+                  Email (Optional)
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-zinc-50 text-black"
+                />
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="amount" 
+                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+                >
+                  Amount ($) *
+                </label>
+                <input
+                  id="amount"
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  min="0"
+                  step="0.01"
+                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-zinc-50 text-black"
+                  required
+                />
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="phone" 
+                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+                >
+                  Phone Number (Optional)
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="Enter phone number"
+                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-zinc-50 text-black"
+                />
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="note" 
+                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+                >
+                  Order Note (Optional)
+                </label>
+                <textarea
+                  id="note"
+                  value={orderNote}
+                  onChange={(e) => setOrderNote(e.target.value)}
+                  placeholder="Add any special instructions or notes"
+                  rows={3}
+                  className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-zinc-50 text-black resize-none"
+                />
+              </div>
+
+              <button
+                onClick={handleContinueToPayment}
+                disabled={isLoading}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
               >
-                Name *
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-zinc-50 text-black"
-                required
-              />
+                {isLoading ? "Loading..." : "Continue to Payment"}
+              </button>
             </div>
-
-            <div>
-              <label 
-                htmlFor="email" 
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
+          ) : (
+            <div className="space-y-6">
+              {clientSecret && paymentIntentId && (
+                <CustomPaymentForm
+                  name={name}
+                  amount={amount}
+                  customerEmail={customerEmail}
+                  orderNote={orderNote}
+                  phoneNumber={phoneNumber}
+                  clientSecret={clientSecret}
+                  paymentIntentId={paymentIntentId}
+                />
+              )}
+              <button
+                onClick={handleBack}
+                className="w-full py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               >
-                Email (Optional)
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-zinc-50 text-black"
-              />
+                ← Back to form
+              </button>
             </div>
-
-            <div>
-              <label 
-                htmlFor="amount" 
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2"
-              >
-                Amount ($) *
-              </label>
-              <input
-                id="amount"
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Enter amount"
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-3 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:text-zinc-50 text-black"
-                required
-              />
-            </div>
-
-            <button
-              onClick={handleCheckout}
-              disabled={isLoading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
-            >
-              {isLoading ? "Redirecting to Checkout..." : "Proceed to Payment"}
-            </button>
-
-            <p className="text-xs text-center text-zinc-500 dark:text-zinc-400">
-              You will be redirected to Stripe Checkout to complete your payment
-            </p>
-          </div>
+          )}
         </div>
       </main>
     </div>

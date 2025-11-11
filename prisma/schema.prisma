@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  stripePaymentIntentId String   @unique
+  stripeCustomerId  String?
+  amount            Int      // Amount in cents
+  currency          String   @default("usd")
+  status            String   // e.g., "succeeded", "pending", "failed"
+  
+  // Customer information
+  customerName      String?
+  customerEmail     String?
+  
+  // Custom fields from payment form
+  orderNote         String?  // Order note (optional)
+  phoneNumber       String?  // Phone number (optional)
+  
+  // Payment method details
+  paymentMethodType String?  // e.g., "card"
+  cardBrand         String?  // e.g., "visa", "mastercard", "amex"
+  cardLast4         String?  // Last 4 digits of card
+  
+  // Metadata
+  metadata          Json?    // Store additional metadata as JSON
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([stripePaymentIntentId])
+  @@index([customerEmail])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payments")
+}
+

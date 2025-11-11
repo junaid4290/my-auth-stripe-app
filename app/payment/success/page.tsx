@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function PaymentSuccess() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [sessionId] = useState<string | null>(searchParams.get("session_id"));
+  const [paymentIntentId] = useState<string | null>(
+    searchParams.get("payment_intent")
+  );
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -39,13 +41,13 @@ export default function PaymentSuccess() {
             Your payment has been processed successfully. Thank you for your purchase!
           </p>
 
-          {sessionId && (
+          {paymentIntentId && (
             <div className="mb-6 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-                Session ID:
+                Payment Intent ID:
               </p>
               <p className="text-sm font-mono text-zinc-700 dark:text-zinc-300 break-all">
-                {sessionId}
+                {paymentIntentId}
               </p>
             </div>
           )}
